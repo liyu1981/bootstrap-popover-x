@@ -10,15 +10,36 @@
  */
 ;(function ($) {
 
+  function _findContainer($element) {
+    // we decide the container simply: go every parent until we get the one with position = fixed, relative or absolute
+    var p = $element.parent();
+    if (!p) { return null; } // just avoid infinite loop, but actually disaster
+    var po = p.css('position');
+    if (po === 'fixed' || po === 'relative' || po === 'absolute') {
+      return p;
+    } else {
+      return _findContainer(p);
+    }
+  }
+
   var PopoverX = function (element, options) {
     var self = this;
+    self.restorers = [];
     self.options = options;
     self.$element = $(element).on('click.dismiss.popoverX', '[data-dismiss="popover-x"]', $.proxy(self.hide, self));
+    self.$container = _findContainer(self.$element);
     self.init();
   }
 
   PopoverX.prototype = $.extend({}, $.fn.modal.Constructor.prototype, {
     constructor: PopoverX,
+    restore: function() {
+      var self = this;
+      $.each(this.restorers, function(index, restorer) {
+        restorer.call(self);
+      });
+      this.restorers = [];
+    },
     init: function () {
       var self = this;
       self.$body = $(document.body);
@@ -90,7 +111,12 @@
     },
     show: function () {
       var self = this, $dialog = self.$element;
-      $dialog.css({ top: 0, left: 0, display: 'block', 'z-index': 1050});
+      var zindex = 1050;
+      $dialog.css({ top: 0, left: 0, display: 'block', 'z-index': zindex});
+      var oldzindex = this.$container.css('z-index');
+      console.log('old zindex is:', oldzindex);
+      this.restorers.push(function() { self.$container.css('z-index', oldzindex); });
+      this.$container.css('z-index', zindex);
       self.refreshPosition();
       $.fn.modal.Constructor.prototype.show.call(self, arguments);
       $dialog.css({'padding': 0});
@@ -135,18 +161,20 @@
       if (option !== 'toggle') {
         option['$target'] = $this;
         $dialog
-        .popoverX(option)
-        .popoverX('show')
-        .on('hide', function () {
-          $this.focus()
-        });
+          .popoverX(option)
+          .popoverX('show')
+          .on('hide.bs.modal', function () {
+            $dialog.popoverX('restore');
+            $this.focus()
+          });
       }
       else {
         $dialog
-        .popoverX(option)
-        .on('hide', function () {
-          $this.focus()
-        });
+          .popoverX(option)
+          .on('hide.bs.modal', function () {
+            $dialog.popoverX('restore');
+            $this.focus()
+          });
       }
     });
 
