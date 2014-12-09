@@ -64,8 +64,9 @@
     },
     refreshPosition: function () {
       var self = this, $dialog = self.$element, placement = self.options.placement,
-      actualWidth = $dialog[0].offsetWidth, actualHeight = $dialog[0].offsetHeight,
-      position, pos = self.getPosition();
+          actualWidth = $dialog[0].offsetWidth, actualHeight = $dialog[0].offsetHeight,
+          position, pos = self.getPosition();
+      var $arrow = $dialog.find('div.arrow'), aposition = {};
       switch (placement) {
         case 'bottom':
           position = {top: pos.top + pos.height, left: pos.left + pos.width / 2 - actualWidth / 2}
@@ -90,6 +91,7 @@
         break;
         case 'left left-top':
           position = {top: pos.top, left: pos.left - actualWidth}
+          aposition.top = pos.top + pos.height / 2;
         break;
         case 'left left-bottom':
           position = {top: pos.top + pos.height - actualHeight, left: pos.left - actualWidth}
@@ -98,7 +100,8 @@
           position = {top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left + pos.width}
         break;
         case 'right right-top':
-          position = {top: pos.top, left: pos.left + pos.width}
+          position = {top: pos.top, left: pos.left + pos.width};
+          aposition.top = pos.top + pos.height / 2;
         break;
         case 'right right-bottom':
           position = {top: pos.top + pos.height - actualHeight, left: pos.left + pos.width}
@@ -108,13 +111,14 @@
         .css(position)
         .addClass(placement)
         .addClass('in');
+      $arrow
+        .css(aposition);
     },
     show: function () {
       var self = this, $dialog = self.$element;
       var zindex = 1050;
       $dialog.css({ top: 0, left: 0, display: 'block', 'z-index': zindex});
       var oldzindex = this.$container.css('z-index');
-      console.log('old zindex is:', oldzindex);
       this.restorers.push(function() { self.$container.css('z-index', oldzindex); });
       this.$container.css('z-index', zindex);
       self.refreshPosition();
